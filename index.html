@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.js'></script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.5.21/vue.min.js'></script>
+  <script>
+    (function () {
+      var _addEventListener = Element.prototype.addEventListener;
+      Element.prototype.addEventListener = function (event, func, useCapture) {
+        this._events = this._events || {};
+        this._events[event] = this._events[event] || [];
+        this._events[event].push({ event: event, callback: func, useCapture: useCapture });
+        _addEventListener.apply(this, arguments);
+      };
+      Element.prototype.getEventListeners = function () {
+        this._events = this._events || [];
+        return this._events;
+      };
+      var _cloneNode = Node.prototype.cloneNode;
+      Node.prototype.cloneNode = function (deep) {
+        var cloneNode = _cloneNode.call(this, deep);
+        function copyEvent(origin, target) {
+          var eventList = origin.getEventListeners();
+          for (var event in eventList) {
+            for (var i = 0, max = eventList[event].length; i < max; i++) {
+              target.addEventListener(event, eventList[event][i].callback, eventList[event][i].useCapture);
+            }
+          }
+        }
+        copyEvent(this, cloneNode);
+        if (deep) {
+          var recursive = function (parent, parentClone) {
+            if (parent.children && parentClone.children) {
+              for (var i = 0, max = parent.children.length; i < max; i++) {
+                var element = parent.children[i];
+                var clone = parentClone.children[i];
+                copyEvent(element, clone);
+                recursive(element, clone);
+              }
+            }
+          };
+          recursive(this, cloneNode);
+        }
+        return cloneNode;
+      }
+    })();
+  </script>
+</head>
+
+<body>
+  <h1>Clone Node With Events</h1>
+  <h2>Native Origin</h2>
+  <div id="native-origin">
+    <input type="button" id="btn1" value="Native-Button-1">
+    <div id="div1">
+      <p>
+        <input type="button" id="btn2" value="Native-Button-2">
+      </p>
+    </div>
+  </div>
+  <hr>
+  <h2>Native Clone</h2>
+  <div id="native-clone">
+  </div>
+  <script>
+    document.querySelector('#native-origin #btn1').addEventListener('click', function () {
+      alert('Button1')
+    })
+    document.querySelector('#native-origin #btn2').addEventListener('click', function () {
+      alert('Button2')
+    })
+    var copyDomWithEvent1 = document.querySelector('#native-origin #btn1').cloneNode(true);
+    var copyDomWithEvent2 = document.querySelector('#native-origin #div1').cloneNode(true);
+    document.querySelector('#native-clone').appendChild(copyDomWithEvent1);
+    document.querySelector('#native-clone').appendChild(copyDomWithEvent2);
+  </script>
+  <hr>
+  <h2>jQuery Origin</h2>
+  <div id="jquery-origin">
+    <input type="button" value="jQuery-Button-1" id="jq-btn1">
+  </div>
+  <hr>
+  <h2>jQuery Clone</h2>
+  <div id="jquery-clone">
+  </div>
+  <script>
+    $(function() {
+      $('#jq-btn1').click(function() {
+        alert('jQuery Button1')
+      })
+      $('#jquery-clone').append($('#jq-btn1').clone())
+    })
+  </script>
+  <hr>
+  <h2>VUE Origin</h2>
+  <div id="app-origin">
+    <input type="button" @click="click" :value="btnName">
+  </div>
+  <hr>
+  <h2>VUE Clone</h2>
+  <div id="app-clone">
+  </div>
+  <script>
+    new Vue({
+      el: '#app-origin',
+      data() {
+        return {
+          btnName: 'Vue-Button-1',
+          i: 0
+        }
+      },
+      methods: {
+        click() {
+          this.i++;
+          alert('vue:' + this.i);
+        }
+      },
+      mounted() {
+        document.querySelector('#app-clone').appendChild(document.querySelector('#app-origin').cloneNode(true));
+      }
+    })
+  </script>
+</body>
+
+</html>
